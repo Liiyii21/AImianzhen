@@ -1,0 +1,84 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1000 1000" role="img" aria-label="Chinese divination wheel visual">
+  <defs>
+    <radialGradient id="starBg" cx="50%" cy="50%" r="58%">
+      <stop offset="0" stop-color="#16275f"/>
+      <stop offset="0.62" stop-color="#08163f"/>
+      <stop offset="1" stop-color="#030817"/>
+    </radialGradient>
+    <radialGradient id="centerGlow" cx="50%" cy="45%" r="52%">
+      <stop offset="0" stop-color="#273b86"/>
+      <stop offset="0.55" stop-color="#0a1432"/>
+      <stop offset="1" stop-color="#050916"/>
+    </radialGradient>
+    <linearGradient id="gold" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#fff0bf"/>
+      <stop offset="0.45" stop-color="#dca852"/>
+      <stop offset="1" stop-color="#8f5e20"/>
+    </linearGradient>
+    <linearGradient id="blueMetal" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#173b86"/>
+      <stop offset="0.55" stop-color="#10275f"/>
+      <stop offset="1" stop-color="#071332"/>
+    </linearGradient>
+    <filter id="goldGlow" x="-30%" y="-30%" width="160%" height="160%">
+      <feDropShadow dx="0" dy="0" stdDeviation="7" flood-color="#f5c778" flood-opacity="0.76"/>
+    </filter>
+    <filter id="blueGlow" x="-30%" y="-30%" width="160%" height="160%">
+      <feDropShadow dx="0" dy="0" stdDeviation="11" flood-color="#4a82ff" flood-opacity="0.7"/>
+    </filter>
+  </defs>
+  <rect width="1000" height="1000" fill="url(#starBg)"/>
+  <g opacity="0.76" stroke="#f7d087" stroke-width="1.2" fill="#f7d087">
+    <circle cx="130" cy="120" r="3"/><circle cx="214" cy="76" r="2"/><circle cx="830" cy="138" r="3"/>
+    <circle cx="884" cy="262" r="2"/><circle cx="112" cy="804" r="2"/><circle cx="772" cy="846" r="3"/>
+    <path d="M130 120 214 76 290 142M742 96 830 138 884 262M112 804 222 760 324 826M650 806 772 846 876 780" fill="none"/>
+  </g>
+  <circle cx="500" cy="500" r="424" fill="none" stroke="url(#gold)" stroke-width="6" filter="url(#goldGlow)"/>
+  <circle cx="500" cy="500" r="392" fill="#08183e" stroke="#2d64c8" stroke-width="7" filter="url(#blueGlow)"/>
+  <circle cx="500" cy="500" r="346" fill="none" stroke="url(#gold)" stroke-width="5"/>
+  <circle cx="500" cy="500" r="244" fill="#0a173c" stroke="url(#gold)" stroke-width="5"/>
+  <g transform="translate(500 500)">
+    <g fill="url(#blueMetal)" stroke="url(#gold)" stroke-width="3">
+      <path d="M0 0 L0 -392 A392 392 0 0 1 196 -339 Z"/>
+      <path d="M0 0 L196 -339 A392 392 0 0 1 339 -196 Z"/>
+      <path d="M0 0 L339 -196 A392 392 0 0 1 392 0 Z"/>
+      <path d="M0 0 L392 0 A392 392 0 0 1 339 196 Z"/>
+      <path d="M0 0 L339 196 A392 392 0 0 1 196 339 Z"/>
+      <path d="M0 0 L196 339 A392 392 0 0 1 0 392 Z"/>
+      <path d="M0 0 L0 392 A392 392 0 0 1 -196 339 Z"/>
+      <path d="M0 0 L-196 339 A392 392 0 0 1 -339 196 Z"/>
+      <path d="M0 0 L-339 196 A392 392 0 0 1 -392 0 Z"/>
+      <path d="M0 0 L-392 0 A392 392 0 0 1 -339 -196 Z"/>
+      <path d="M0 0 L-339 -196 A392 392 0 0 1 -196 -339 Z"/>
+      <path d="M0 0 L-196 -339 A392 392 0 0 1 0 -392 Z"/>
+    </g>
+    <circle r="292" fill="none" stroke="#f4c985" stroke-width="3" opacity="0.72"/>
+    <circle r="192" fill="none" stroke="#4b82ff" stroke-width="5" opacity="0.72" filter="url(#blueGlow)"/>
+    <g fill="url(#gold)" font-family="Microsoft YaHei, PingFang SC, serif" font-size="58" font-weight="800" text-anchor="middle" dominant-baseline="middle" filter="url(#goldGlow)">
+      <text transform="rotate(0) translate(0 -318) rotate(0)">子</text>
+      <text transform="rotate(30) translate(0 -318) rotate(-30)">丑</text>
+      <text transform="rotate(60) translate(0 -318) rotate(-60)">寅</text>
+      <text transform="rotate(90) translate(0 -318) rotate(-90)">卯</text>
+      <text transform="rotate(120) translate(0 -318) rotate(-120)">辰</text>
+      <text transform="rotate(150) translate(0 -318) rotate(-150)">巳</text>
+      <text transform="rotate(180) translate(0 -318) rotate(-180)">午</text>
+      <text transform="rotate(210) translate(0 -318) rotate(-210)">未</text>
+      <text transform="rotate(240) translate(0 -318) rotate(-240)">申</text>
+      <text transform="rotate(270) translate(0 -318) rotate(-270)">酉</text>
+      <text transform="rotate(300) translate(0 -318) rotate(-300)">戌</text>
+      <text transform="rotate(330) translate(0 -318) rotate(-330)">亥</text>
+    </g>
+    <g stroke="url(#gold)" stroke-width="3" fill="none" opacity="0.62">
+      <path d="M0 -230 58 -92 206 -82 92 18 130 162 0 84 -130 162 -92 18 -206 -82 -58 -92Z"/>
+      <path d="M0 -170 42 -68 152 -60 68 13 96 119 0 62 -96 119 -68 13 -152 -60 -42 -68Z"/>
+    </g>
+    <circle r="104" fill="url(#centerGlow)" stroke="url(#gold)" stroke-width="5" filter="url(#blueGlow)"/>
+    <circle r="72" fill="#060b1d" stroke="#3272ff" stroke-width="4"/>
+  </g>
+  <g fill="url(#gold)" filter="url(#goldGlow)">
+    <path d="M500 47 516 84 500 121 484 84Z"/>
+    <path d="M953 500 916 516 879 500 916 484Z"/>
+    <path d="M500 953 484 916 500 879 516 916Z"/>
+    <path d="M47 500 84 484 121 500 84 516Z"/>
+  </g>
+</svg>
