@@ -41,6 +41,7 @@ const directusSource = fs.readFileSync(new URL("../src/directusApi.js", import.m
 const mockDirectusSource = fs.readFileSync(new URL("../../scripts/mock-directus-server.mjs", import.meta.url), "utf8");
 const viteSource = fs.readFileSync(new URL("../vite.config.mjs", import.meta.url), "utf8");
 const envSource = fs.readFileSync(new URL("../.env", import.meta.url), "utf8");
+const deployWorkflowSource = fs.readFileSync(new URL("../.github/workflows/deploy-pages.yml", import.meta.url), "utf8");
 
 assert.match(appSource, /conversionFields/, "conversion modal fields should be configured");
 assert.match(appSource, /useMotionEffects/, "app should wire anime motion effects");
@@ -50,6 +51,7 @@ assert.match(packageSource, /"animejs"/, "animejs should be installed as a proje
 assert.match(viteSource, /VITE_PAGE_ID/, "standalone project should inject its page id");
 assert.match(viteSource, /beauty/, "beauty project should open the beauty page at the root URL");
 assert.match(envSource, /VITE_DIRECTUS_URL=http:\/\/127\.0\.0\.1:8055/, "beauty local env should point at its Directus instance");
+assert.match(deployWorkflowSource, /VITE_DIRECTUS_URL:\s*\$\{\{\s*vars\.VITE_DIRECTUS_URL\s*\}\}/, "GitHub Pages build should inject the production Directus URL");
 assert.match(appSource, /AuthPanel/, "account tab should render login and registration controls");
 assert.match(appSource, /auth-shortcut/, "home screens should expose a visible auth shortcut");
 assert.match(appSource, /登录 \/ 注册/, "auth shortcut should clearly say login/register");
