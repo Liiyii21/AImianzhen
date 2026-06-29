@@ -56,6 +56,9 @@ assert.match(supabaseConfigSource, /window\.__SUPABASE_CONFIG__/, "beauty runtim
 assert.match(supabaseConfigSource, /zahnteyhzrwqjgdgmmjz\.supabase\.co/, "beauty runtime Supabase config should point at the shared project");
 assert.match(deployWorkflowSource, /VITE_DIRECTUS_URL:\s*\$\{\{\s*vars\.VITE_DIRECTUS_URL\s*\}\}/, "GitHub Pages build should inject the production Directus URL");
 assert.match(appSource, /AuthPanel/, "account tab should render login and registration controls");
+assert.match(appSource, /setActiveTab\(0\)/, "successful login should return users to the home tab");
+assert.match(appSource, /服务记录已同步/, "logged-in account card should show user-facing sync status");
+assert.doesNotMatch(appSource, /<p>\{directusConfig\.url/, "logged-in account card should not expose backend request URLs");
 assert.match(appSource, /auth-shortcut/, "home screens should expose a visible auth shortcut");
 assert.match(appSource, /登录 \/ 注册/, "auth shortcut should clearly say login/register");
 assert.match(appSource, /submitLead/, "modal submissions should call the Directus lead API");

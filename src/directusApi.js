@@ -124,7 +124,8 @@ async function getSupabaseUser(session = getStoredSession()) {
   if (!SUPABASE_ENABLED) return null;
   if (session?.user?.id) return session.user;
   if (!session?.access_token) return null;
-  return supabaseRequest("/auth/v1/user", { token: session.access_token });
+  const user = await supabaseRequest("/auth/v1/user", { token: session.access_token });
+  return shapeSupabaseUser(user);
 }
 
 function shapeSupabaseRecord(row) {

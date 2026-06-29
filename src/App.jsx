@@ -795,6 +795,9 @@ function ServicePage({ page, standalone = false }) {
       }
       const nextSession = await loginUser(values);
       setSession(nextSession);
+      if (nextSession?.user) setCurrentUser(nextSession.user);
+      setSelectedRecord(null);
+      setActiveTab(0);
       setNotice("登录成功，后续表单会保存为你的服务记录。");
     } catch (error) {
       setAuthError(error.message);
@@ -2346,6 +2349,16 @@ function AuthPanel({ busy, error, onLogout, onSubmit, page, session, user }) {
   const [mode, setMode] = useState("login");
   const [values, setValues] = useState({ email: "", password: "", firstName: "" });
   const isLoggedIn = Boolean(session?.access_token);
+  const accountName =
+    user?.first_name ||
+    user?.user_metadata?.first_name ||
+    user?.user_metadata?.name ||
+    session?.user?.first_name ||
+    session?.user?.user_metadata?.first_name ||
+    session?.user?.user_metadata?.name ||
+    user?.email?.split("@")[0] ||
+    session?.user?.email?.split("@")[0] ||
+    "当前用户";
 
   function updateField(name, value) {
     setValues((current) => ({ ...current, [name]: value }));
@@ -2361,8 +2374,8 @@ function AuthPanel({ busy, error, onLogout, onSubmit, page, session, user }) {
       <article className="auth-panel">
         <div>
           <span>账号已登录</span>
-          <strong>{user?.first_name || user?.email || "当前用户"}</strong>
-          <p>{directusConfig.url || "未配置 VITE_DIRECTUS_URL"}</p>
+          <strong>{accountName}</strong>
+          <p>服务记录已同步</p>
         </div>
         <button disabled={busy} onClick={onLogout} type="button">
           退出登录
