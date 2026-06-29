@@ -12,6 +12,7 @@ const SESSION_KEY = "ai_service_directus_session";
 const LOCAL_ACCOUNTS_KEY = "ai_service_local_accounts";
 const LOCAL_ITEMS_KEY = "ai_service_local_items";
 const LOCAL_FILES_KEY = "ai_service_local_files";
+const LOCAL_DISPLAY_NAMES_KEY = "ai_service_display_names";
 
 export const isLocalMode = !REMOTE_BACKEND_ENABLED;
 
@@ -95,6 +96,7 @@ async function supabaseRequest(path, { method = "GET", body, token, prefer } = {
 
 function supabaseSessionFor(payload) {
   if (!payload?.access_token) return null;
+  const firstName = resolveDisplayName(payload.user);
   return {
     access_token: payload.access_token,
     refresh_token: payload.refresh_token,
@@ -104,7 +106,7 @@ function supabaseSessionFor(payload) {
       ? {
           id: payload.user.id,
           email: payload.user.email,
-          first_name: payload.user.user_metadata?.first_name || payload.user.email?.split("@")[0],
+          first_name: firstName,
         }
       : undefined,
   };
@@ -115,9 +117,39 @@ function shapeSupabaseUser(user) {
   return {
     id: user.id,
     email: user.email,
-    first_name: user.user_metadata?.first_name || user.email?.split("@")[0],
+    first_name: resolveDisplayName(user),
     date_created: user.created_at,
   };
+}
+
+function readDisplayNames() {
+  try {
+    return JSON.parse(localStorage.getItem(LOCAL_DISPLAY_NAMES_KEY) || "{}");
+  } catch {
+    return {};
+  }
+}
+
+function rememberDisplayName(email, firstName) {
+  const normalizedEmail = String(email || "").trim().toLowerCase();
+  const displayName = String(firstName || "").trim();
+  if (!normalizedEmail || !displayName) return;
+  localStorage.setItem(
+    LOCAL_DISPLAY_NAMES_KEY,
+    JSON.stringify({ ...readDisplayNames(), [normalizedEmail]: displayName })
+  );
+}
+
+function resolveDisplayName(user) {
+  const metadata = user?.user_metadata || {};
+  const normalizedEmail = String(user?.email || "").trim().toLowerCase();
+  return (
+    metadata.first_name ||
+    metadata.full_name ||
+    metadata.name ||
+    readDisplayNames()[normalizedEmail] ||
+    ""
+  );
 }
 
 async function getSupabaseUser(session = getStoredSession()) {
@@ -146,13 +178,16 @@ function shapeSupabaseRecord(row) {
 }
 
 async function supabaseRegisterUser({ email, password, firstName }) {
+  rememberDisplayName(email, firstName);
   await supabaseRequest("/auth/v1/signup", {
     method: "POST",
     body: {
       email,
       password,
       data: {
-        first_name: firstName || email?.split("@")[0],
+        first_name: String(firstName || "").trim(),
+        full_name: String(firstName || "").trim(),
+        name: String(firstName || "").trim(),
       },
     },
   });

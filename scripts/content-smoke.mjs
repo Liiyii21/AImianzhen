@@ -59,6 +59,7 @@ assert.match(appSource, /AuthPanel/, "account tab should render login and regist
 assert.match(appSource, /setActiveTab\(0\)/, "successful login should return users to the home tab");
 assert.match(appSource, /服务记录已同步/, "logged-in account card should show user-facing sync status");
 assert.doesNotMatch(appSource, /<p>\{directusConfig\.url/, "logged-in account card should not expose backend request URLs");
+assert.doesNotMatch(appSource, /email\?\.split\("@"/, "logged-in account card should not fall back to an email prefix");
 assert.match(appSource, /auth-shortcut/, "home screens should expose a visible auth shortcut");
 assert.match(appSource, /登录 \/ 注册/, "auth shortcut should clearly say login/register");
 assert.match(appSource, /submitLead/, "modal submissions should call the Directus lead API");
