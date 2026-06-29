@@ -50,7 +50,7 @@ assert.match(motionSource, /prefers-reduced-motion/, "motion effects should resp
 assert.match(packageSource, /"animejs"/, "animejs should be installed as a project dependency");
 assert.match(viteSource, /VITE_PAGE_ID/, "standalone project should inject its page id");
 assert.match(viteSource, /beauty/, "beauty project should open the beauty page at the root URL");
-assert.match(envSource, /VITE_DIRECTUS_URL=http:\/\/127\.0\.0\.1:8055/, "beauty local env should point at its Directus instance");
+assert.match(envSource, /VITE_PAGE_ID=beauty/, "beauty local env should open the beauty standalone page");
 assert.match(deployWorkflowSource, /VITE_DIRECTUS_URL:\s*\$\{\{\s*vars\.VITE_DIRECTUS_URL\s*\}\}/, "GitHub Pages build should inject the production Directus URL");
 assert.match(appSource, /AuthPanel/, "account tab should render login and registration controls");
 assert.match(appSource, /auth-shortcut/, "home screens should expose a visible auth shortcut");
@@ -142,6 +142,10 @@ assert.match(styleSource, /mysticRingTrace/, "divination wheel ring animation sh
 assert.match(styleSource, /\.beauty-screen \.beauty-scan-visual/, "beauty scan polish should exist");
 
 assert.match(directusSource, /VITE_DIRECTUS_URL/, "Directus base URL should come from Vite env");
+assert.match(directusSource, /LOCAL_ACCOUNTS_KEY/, "API layer should support browser-local accounts when no backend URL is configured");
+assert.match(directusSource, /isLocalMode/, "API layer should expose a local mode instead of blocking static deployments");
+assert.match(directusSource, /localCreateItem/, "API layer should save submitted records locally without a backend");
+assert.match(directusSource, /localUploadFile/, "API layer should keep uploaded file metadata locally without a backend");
 assert.match(directusSource, /\/users\/register/, "Directus API layer should expose user registration");
 assert.match(directusSource, /\/auth\/login/, "Directus API layer should expose login");
 assert.match(directusSource, /\/auth\/refresh/, "Directus API layer should expose token refresh");
