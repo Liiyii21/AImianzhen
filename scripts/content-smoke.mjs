@@ -41,6 +41,7 @@ const directusSource = fs.readFileSync(new URL("../src/directusApi.js", import.m
 const mockDirectusSource = fs.readFileSync(new URL("../../scripts/mock-directus-server.mjs", import.meta.url), "utf8");
 const viteSource = fs.readFileSync(new URL("../vite.config.mjs", import.meta.url), "utf8");
 const envSource = fs.readFileSync(new URL("../.env", import.meta.url), "utf8");
+const supabaseConfigSource = fs.readFileSync(new URL("../public/supabase-config.js", import.meta.url), "utf8");
 const deployWorkflowSource = fs.readFileSync(new URL("../.github/workflows/deploy-pages.yml", import.meta.url), "utf8");
 
 assert.match(appSource, /conversionFields/, "conversion modal fields should be configured");
@@ -51,6 +52,8 @@ assert.match(packageSource, /"animejs"/, "animejs should be installed as a proje
 assert.match(viteSource, /VITE_PAGE_ID/, "standalone project should inject its page id");
 assert.match(viteSource, /beauty/, "beauty project should open the beauty page at the root URL");
 assert.match(envSource, /VITE_PAGE_ID=beauty/, "beauty local env should open the beauty standalone page");
+assert.match(supabaseConfigSource, /window\.__SUPABASE_CONFIG__/, "beauty runtime Supabase config should be loaded before the app boots");
+assert.match(supabaseConfigSource, /zahnteyhzrwqjgdgmmjz\.supabase\.co/, "beauty runtime Supabase config should point at the shared project");
 assert.match(deployWorkflowSource, /VITE_DIRECTUS_URL:\s*\$\{\{\s*vars\.VITE_DIRECTUS_URL\s*\}\}/, "GitHub Pages build should inject the production Directus URL");
 assert.match(appSource, /AuthPanel/, "account tab should render login and registration controls");
 assert.match(appSource, /auth-shortcut/, "home screens should expose a visible auth shortcut");
@@ -142,6 +145,13 @@ assert.match(styleSource, /mysticRingTrace/, "divination wheel ring animation sh
 assert.match(styleSource, /\.beauty-screen \.beauty-scan-visual/, "beauty scan polish should exist");
 
 assert.match(directusSource, /VITE_DIRECTUS_URL/, "Directus base URL should come from Vite env");
+assert.match(directusSource, /VITE_SUPABASE_URL/, "API layer should read the Supabase project URL from Vite env");
+assert.match(directusSource, /VITE_SUPABASE_ANON_KEY/, "API layer should read the Supabase publishable key from Vite env");
+assert.match(directusSource, /\/auth\/v1\/signup/, "API layer should register users through Supabase Auth REST");
+assert.match(directusSource, /grant_type=password/, "API layer should login users through Supabase Auth REST");
+assert.match(directusSource, /\/rest\/v1\/service_records/, "API layer should use Supabase PostgREST for records");
+assert.match(directusSource, /service_records/, "API layer should save user records to the Supabase service_records table");
+assert.match(directusSource, /service_files/, "API layer should save upload metadata to the Supabase service_files table");
 assert.match(directusSource, /LOCAL_ACCOUNTS_KEY/, "API layer should support browser-local accounts when no backend URL is configured");
 assert.match(directusSource, /isLocalMode/, "API layer should expose a local mode instead of blocking static deployments");
 assert.match(directusSource, /localCreateItem/, "API layer should save submitted records locally without a backend");
