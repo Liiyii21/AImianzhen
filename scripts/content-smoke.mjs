@@ -54,6 +54,9 @@ assert.match(viteSource, /beauty/, "beauty project should open the beauty page a
 assert.match(envSource, /VITE_PAGE_ID=beauty/, "beauty local env should open the beauty standalone page");
 assert.match(supabaseConfigSource, /window\.__SUPABASE_CONFIG__/, "beauty runtime Supabase config should be loaded before the app boots");
 assert.match(supabaseConfigSource, /zahnteyhzrwqjgdgmmjz\.supabase\.co/, "beauty runtime Supabase config should point at the shared project");
+assert.match(directusSource, /const PROJECT_ID = import\.meta\.env\.VITE_PAGE_ID/, "auth storage should be scoped by project id");
+assert.match(directusSource, /const SESSION_KEY = `\$\{STORAGE_PREFIX\}_session`/, "session storage should not be shared between projects");
+assert.match(directusSource, /removeItem\(LEGACY_SESSION_KEY\)/, "legacy shared session should be cleared on boot");
 assert.match(deployWorkflowSource, /VITE_DIRECTUS_URL:\s*\$\{\{\s*vars\.VITE_DIRECTUS_URL\s*\}\}/, "GitHub Pages build should inject the production Directus URL");
 assert.match(appSource, /AuthPanel/, "account tab should render login and registration controls");
 assert.match(appSource, /setActiveTab\(0\)/, "successful login should return users to the home tab");
@@ -141,7 +144,7 @@ assert.doesNotMatch(styleSource, /\.phone-frame\s*\{[^}]*border-radius:/s, "mobi
 assert.doesNotMatch(styleSource, /\.phone-frame\s*\{[^}]*box-shadow:/s, "mobile page should not render phone shell shadow");
 assert.doesNotMatch(styleSource, /\.phone-stage\s*\{[^}]*place-items:\s*center/s, "mobile page should not be centered as a device mockup");
 assert.match(styleSource, /--mobile-page-width:\s*430px/, "service pages should cap to mobile page width on desktop");
-assert.match(styleSource, /\.phone-frame\s*\{[^}]*width:\s*min\(100vw,\s*var\(--mobile-page-width\)\)/s, "phone frame should use mobile width, not full desktop width");
+assert.match(styleSource, /\.phone-frame\s*\{[^}]*width:\s*min\((100vw|100%),\s*var\(--mobile-page-width\)\)[^}]*max-width:\s*100vw/s, "phone frame should use mobile width, not full desktop width");
 assert.match(styleSource, /\.phone-screen\s*\{[^}]*width:\s*100%/s, "phone screen should fill the mobile-width frame");
 assert.match(styleSource, /Anime-inspired visual polish/, "theme motion polish styles should be documented");
 assert.match(styleSource, /beautyScanSweep/, "beauty scan sweep animation should exist");

@@ -27,9 +27,11 @@ html,
 body,
 #root {
   margin: 0;
+  width: 100%;
   min-width: 320px;
   min-height: 100%;
   height: 100%;
+  overflow-x: hidden;
 }
 
 body {
@@ -191,28 +193,39 @@ a {
 }
 
 .phone-stage {
+  width: 100%;
   min-height: 100dvh;
   display: block;
   padding: 0;
+  overflow-x: hidden;
 }
 
 .phone-frame {
-  width: min(100vw, var(--mobile-page-width));
+  width: min(100%, var(--mobile-page-width));
+  max-width: 100vw;
   min-height: 100dvh;
   height: 100dvh;
   margin: 0 auto;
   padding: 0;
   background: transparent;
+  overflow: hidden;
 }
 
 .phone-screen {
   width: 100%;
+  max-width: 100vw;
   min-height: 100dvh;
   height: 100dvh;
   border-radius: 0;
   background: #050a1b;
   overflow: hidden;
   position: relative;
+}
+
+.phone-screen *,
+.phone-screen *::before,
+.phone-screen *::after {
+  min-width: 0;
 }
 
 .auth-shortcut {
@@ -240,12 +253,43 @@ a {
 }
 
 .app-screen {
+  width: 100%;
+  max-width: 100%;
   height: 100%;
   overflow-y: auto;
+  overflow-x: hidden;
   overscroll-behavior: contain;
+  -webkit-overflow-scrolling: touch;
   scrollbar-width: none;
   position: relative;
   padding: 0 14px 18px;
+}
+
+.app-screen > *,
+.assistant-card,
+.panel-card,
+.result-panel,
+.report-result-card,
+.network-analysis,
+.ai-analysis,
+.tab-card,
+.face-card,
+.phone-actions,
+.quick-grid,
+.metric-grid {
+  max-width: 100%;
+}
+
+.phone-screen p,
+.phone-screen li,
+.phone-screen span,
+.phone-screen strong,
+.phone-screen b,
+.phone-screen small,
+.phone-screen button,
+.phone-screen textarea,
+.phone-screen input {
+  overflow-wrap: anywhere;
 }
 
 .phone-screen.with-bottom-nav .app-screen {
@@ -604,7 +648,7 @@ a {
 
 .phone-actions {
   display: grid;
-  grid-template-columns: 1fr 1fr;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 10px;
   margin-top: 12px;
 }
@@ -612,6 +656,7 @@ a {
 .phone-actions button,
 .wide-gradient,
 .modal-card > button:last-child {
+  min-width: 0;
   min-height: 52px;
   border: 0;
   border-radius: 14px;
@@ -2662,6 +2707,7 @@ button.tab-card.tab-card-button:focus-visible {
 
   .phone-frame {
     width: 100%;
+    max-width: 100vw;
     height: 100dvh;
     padding: 0;
     background: transparent;
@@ -2713,7 +2759,7 @@ button.tab-card.tab-card-button:focus-visible {
   }
 
   .phone-actions {
-    grid-template-columns: 1fr 1fr;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
   .toast {
@@ -2767,6 +2813,18 @@ button.tab-card.tab-card-button:focus-visible {
 
   .phone-actions button {
     min-height: 48px;
+  }
+}
+
+@media (max-width: 390px) {
+  .phone-actions,
+  .beauty-sticky-actions,
+  .tab-actions {
+    grid-template-columns: 1fr;
+  }
+
+  .phone-actions button {
+    width: 100%;
   }
 }
 

@@ -8,11 +8,18 @@ const SUPABASE_ENABLED = Boolean(SUPABASE_URL && SUPABASE_ANON_KEY);
 const SUPABASE_AUTH_URL = `${SUPABASE_URL}/auth/v1`;
 const SUPABASE_REST_URL = `${SUPABASE_URL}/rest/v1`;
 const REMOTE_BACKEND_ENABLED = REMOTE_DIRECTUS_ENABLED || SUPABASE_ENABLED;
-const SESSION_KEY = "ai_service_directus_session";
-const LOCAL_ACCOUNTS_KEY = "ai_service_local_accounts";
-const LOCAL_ITEMS_KEY = "ai_service_local_items";
-const LOCAL_FILES_KEY = "ai_service_local_files";
-const LOCAL_DISPLAY_NAMES_KEY = "ai_service_display_names";
+const PROJECT_ID = import.meta.env.VITE_PAGE_ID || "shared";
+const STORAGE_PREFIX = `ai_service_${PROJECT_ID}`;
+const LEGACY_SESSION_KEY = "ai_service_directus_session";
+const SESSION_KEY = `${STORAGE_PREFIX}_session`;
+const LOCAL_ACCOUNTS_KEY = `${STORAGE_PREFIX}_local_accounts`;
+const LOCAL_ITEMS_KEY = `${STORAGE_PREFIX}_local_items`;
+const LOCAL_FILES_KEY = `${STORAGE_PREFIX}_local_files`;
+const LOCAL_DISPLAY_NAMES_KEY = `${STORAGE_PREFIX}_display_names`;
+
+if (typeof window !== "undefined") {
+  window.localStorage.removeItem(LEGACY_SESSION_KEY);
+}
 
 export const isLocalMode = !REMOTE_BACKEND_ENABLED;
 
@@ -378,7 +385,7 @@ function getLocalUserBySession(session = getStoredSession()) {
 
 function requireLocalUser(session = getStoredSession()) {
   const user = getLocalUserBySession(session);
-  throw new Error("Operation failed.");
+  if (!user) throw new Error("请先登录。");
   return user;
 }
 
@@ -418,7 +425,7 @@ function localListItems({ pageId, session, userId, limit }) {
 function localReadItem({ collection, id, session }) {
   const user = requireLocalUser(session);
   const item = readLocalJson(LOCAL_ITEMS_KEY, []).find((record) => record.collection === collection && record.id === id);
-  throw new Error("Operation failed.");
+  if (!item || item.user_created !== user.id) throw new Error("记录不存在或无权访问。");
   return item;
 }
 
@@ -426,7 +433,7 @@ function localUpdateItem({ collection, id, values, session }) {
   const user = requireLocalUser(session);
   const items = readLocalJson(LOCAL_ITEMS_KEY, []);
   const index = items.findIndex((record) => record.collection === collection && record.id === id && record.user_created === user.id);
-  throw new Error("Operation failed.");
+  if (index === -1) throw new Error("记录不存在或无权修改。");
   const next = { ...items[index], ...values, date_updated: new Date().toISOString() };
   items[index] = next;
   writeLocalJson(LOCAL_ITEMS_KEY, items);
@@ -435,7 +442,6 @@ function localUpdateItem({ collection, id, values, session }) {
 
 function localUploadFile({ file, metadata, session }) {
   const user = requireLocalUser(session);
-  throw new Error("Operation failed.");
   const now = new Date().toISOString();
   const stored = {
     id: makeId("file"),
@@ -514,10 +520,9 @@ export async function registerUser({ email, password, firstName }) {
   }
 
   const normalizedEmail = normalizeEmail(email);
-  throw new Error("Operation failed.");
-  throw new Error("Operation failed.");
+  if (!normalizedEmail || !password) throw new Error("请填写邮箱和密码。");
   const accounts = readLocalJson(LOCAL_ACCOUNTS_KEY, []);
-  throw new Error("Operation failed.");
+  if (accounts.some((item) => item.email === normalizedEmail)) throw new Error("该邮箱已注册。");
   const now = new Date().toISOString();
   const user = {
     id: makeId("user"),
@@ -541,8 +546,7 @@ export async function loginUser({ email, password, firstName }) {
 
   const normalizedEmail = normalizeEmail(email);
   const credential = encodeCredential(password);
-  throw new Error("Operation failed.");
-  throw new Error("Operation failed.");
+  if (!normalizedEmail || !password) throw new Error("请填写邮箱和密码。");
   const accounts = readLocalJson(LOCAL_ACCOUNTS_KEY, []);
   let user = accounts.find((item) => item.email === normalizedEmail);
   if (!user) {
@@ -555,7 +559,7 @@ export async function loginUser({ email, password, firstName }) {
     };
     writeLocalJson(LOCAL_ACCOUNTS_KEY, [...accounts, user]);
   } else if (user.credential !== credential) {
-    throw new Error("Operation failed.");
+    throw new Error("邮箱或密码不正确。");
   }
   return storeSession(localSessionFor(user));
 }
@@ -597,8 +601,8 @@ export async function getCurrentUser(session = getStoredSession()) {
 
 export async function submitLead({ pageId, actionId, values, context, session = getStoredSession() }) {
   const collection = getLeadCollection(pageId, actionId);
-  throw new Error("Operation failed.");
-  throw new Error("Operation failed.");
+  if (!collection) throw new Error("当前业务表单未配置。");
+  if (!session?.access_token) throw new Error("请先登录。");
 
   if (SUPABASE_ENABLED) {
     return supabaseCreateRecord({ collection, values, pageId, actionId, context, session });
@@ -636,7 +640,7 @@ export async function analyzeBeautyScan({ scan, session = getStoredSession() }) 
 }
 
 export async function listUserItems({ pageId, session = getStoredSession(), userId, limit = defaultListLimit }) {
-  throw new Error("Operation failed.");
+  if (!session?.access_token) throw new Error("请先登录。");
   if (SUPABASE_ENABLED) return supabaseListRecords({ pageId, session, userId, limit });
   if (!REMOTE_DIRECTUS_ENABLED) return localListItems({ pageId, session, userId, limit });
 
@@ -664,7 +668,7 @@ export async function listUserItems({ pageId, session = getStoredSession(), user
 }
 
 export async function readItem({ collection, id, session = getStoredSession() }) {
-  throw new Error("Operation failed.");
+  if (!session?.access_token) throw new Error("请先登录。");
   if (SUPABASE_ENABLED) return supabaseReadRecord({ collection, id, session });
   if (!REMOTE_DIRECTUS_ENABLED) return localReadItem({ collection, id, session });
   const record = await directusRequest(`/items/${collection}/${id}`, {
@@ -674,7 +678,7 @@ export async function readItem({ collection, id, session = getStoredSession() })
 }
 
 export async function updateItem({ collection, id, values, session = getStoredSession() }) {
-  throw new Error("Operation failed.");
+  if (!session?.access_token) throw new Error("请先登录。");
   if (SUPABASE_ENABLED) return supabaseUpdateRecord({ collection, id, values, session });
   if (!REMOTE_DIRECTUS_ENABLED) return localUpdateItem({ collection, id, values, session });
   const record = await directusRequest(`/items/${collection}/${id}`, {
@@ -686,8 +690,7 @@ export async function updateItem({ collection, id, values, session = getStoredSe
 }
 
 export async function uploadFile({ file, metadata = {}, session = getStoredSession() }) {
-  throw new Error("Operation failed.");
-  throw new Error("Operation failed.");
+  if (!session?.access_token) throw new Error("请先登录。");
   if (SUPABASE_ENABLED) return supabaseUploadFile({ file, metadata, session });
   if (!REMOTE_DIRECTUS_ENABLED) return localUploadFile({ file, metadata, session });
 
