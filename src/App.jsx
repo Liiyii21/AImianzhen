@@ -277,6 +277,13 @@ async function analyzeBeautyImageFile(file) {
   const oiliness = total ? (brightPixels / total) * 260 : 0;
   const texture = Math.min(100, contrast * 1.45 + saturation * 0.28);
   const hydrationSignal = Math.max(0, Math.min(100, 72 - texture * 0.32 - redness * 0.18 + oiliness * 0.08));
+  const maxVisionSize = 768;
+  const visionScale = Math.min(1, maxVisionSize / Math.max(image.naturalWidth, image.naturalHeight));
+  const visionCanvas = document.createElement("canvas");
+  visionCanvas.width = Math.max(1, Math.round(image.naturalWidth * visionScale));
+  visionCanvas.height = Math.max(1, Math.round(image.naturalHeight * visionScale));
+  const visionContext = visionCanvas.getContext("2d");
+  visionContext.drawImage(image, 0, 0, visionCanvas.width, visionCanvas.height);
 
   return {
     brightness: Math.round(Math.max(0, Math.min(100, (avgBrightness / 255) * 100))),
@@ -287,6 +294,7 @@ async function analyzeBeautyImageFile(file) {
     hydration_signal: Math.round(Math.max(0, Math.min(100, hydrationSignal))),
     contrast: Math.round(Math.max(0, Math.min(100, contrast))),
     file_signature: `${file.name}:${file.size}:${image.naturalWidth}x${image.naturalHeight}`,
+    image_data_url: visionCanvas.toDataURL("image/jpeg", 0.82),
   };
 }
 
@@ -577,6 +585,12 @@ function ServicePage({ page, standalone = false }) {
     };
   }
 
+  function publicBeautyImageProfile(profile) {
+    if (!profile) return null;
+    const { image_data_url: _imageDataUrl, ...publicProfile } = profile;
+    return publicProfile;
+  }
+
   async function handleBeautyScanComplete() {
     if (page.id !== "beauty") return;
 
@@ -604,7 +618,7 @@ function ServicePage({ page, standalone = false }) {
               face_photo_uploaded: scan.face_photo_uploaded,
               photo_file: scan.photo,
               photo_summary: analysis.photo_summary,
-              image_profile: scan.image_profile,
+              image_profile: publicBeautyImageProfile(scan.image_profile),
             },
             session,
             context: {

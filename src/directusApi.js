@@ -101,6 +101,24 @@ async function supabaseRequest(path, { method = "GET", body, token, prefer } = {
   return payload;
 }
 
+async function supabaseFunctionRequest(name, { body, session } = {}) {
+  const response = await fetch(`${SUPABASE_URL}/functions/v1/${name}`, {
+    method: "POST",
+    headers: {
+      apikey: SUPABASE_ANON_KEY,
+      Authorization: `Bearer ${session?.access_token || SUPABASE_ANON_KEY}`,
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify(body ?? {}),
+  });
+
+  const payload = await response.json().catch(() => null);
+  if (!response.ok) {
+    throw new Error(payload?.message || payload?.error || "Vision analysis request failed.");
+  }
+  return payload;
+}
+
 function supabaseSessionFor(payload) {
   if (!payload?.access_token) return null;
   const firstName = resolveDisplayName(payload.user);
@@ -459,7 +477,7 @@ function localUploadFile({ file, metadata, session }) {
 }
 
 function buildLocalBeautyAnalysis(scan = {}) {
-  const profile = scan.image_profile ?? {};
+  const { image_data_url: _imageDataUrl, ...profile } = scan.image_profile ?? {};
   const metricLabels = scan.metric_labels ?? {};
   const valueOf = (key, fallback = 0) => Number(profile[key] ?? fallback) || 0;
   const redness = valueOf("redness");
@@ -517,6 +535,34 @@ function buildLocalBeautyAnalysis(scan = {}) {
     sources: [],
     disclaimer: "本结果为皮肤护理参考，不替代医生或专业机构面诊。",
   };
+}
+
+async function supabaseAnalyzeBeautyScan({ scan, session }) {
+  try {
+    const result = await supabaseFunctionRequest("beauty-vision", {
+      session,
+      body: { scan },
+    });
+    const { image_data_url: _imageDataUrl, ...publicProfile } = scan.image_profile ?? {};
+    return {
+      id: result.id || makeId("beauty_analysis"),
+      provider_status: result.provider_status || "vision_model",
+      generated_at: result.generated_at || new Date().toISOString(),
+      summary: result.summary,
+      photo_summary: result.photo_summary,
+      recommendations: Array.isArray(result.recommendations) ? result.recommendations : [],
+      risk_notes: Array.isArray(result.risk_notes) ? result.risk_notes : [],
+      image_profile: result.image_profile || publicProfile,
+      sources: [],
+      disclaimer: result.disclaimer || "本结果为皮肤护理参考，不替代医生或专业机构面诊。",
+    };
+  } catch (error) {
+    return {
+      ...buildLocalBeautyAnalysis(scan),
+      provider_status: "local_fallback",
+      model_error: error.message,
+    };
+  }
 }
 
 export function getStoredSession() {
@@ -671,6 +717,7 @@ export async function submitSystemEvent({ pageId, actionId, values = {}, context
 }
 
 export async function analyzeBeautyScan({ scan, session = getStoredSession() }) {
+  if (SUPABASE_ENABLED) return supabaseAnalyzeBeautyScan({ scan, session });
   if (!REMOTE_DIRECTUS_ENABLED) return buildLocalBeautyAnalysis(scan);
   return directusRequest("/ai/beauty/analyze", {
     method: "POST",
