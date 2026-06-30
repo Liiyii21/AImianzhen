@@ -209,6 +209,87 @@ const statusOptions = [
 
 const beautyPhotoMaxBytes = 8 * 1024 * 1024;
 
+function loadImageForAnalysis(file) {
+  return new Promise((resolve, reject) => {
+    const url = URL.createObjectURL(file);
+    const image = new Image();
+    image.onload = () => {
+      URL.revokeObjectURL(url);
+      resolve(image);
+    };
+    image.onerror = () => {
+      URL.revokeObjectURL(url);
+      reject(new Error("图片读取失败，请换一张清晰正脸照片。"));
+    };
+    image.src = url;
+  });
+}
+
+async function analyzeBeautyImageFile(file) {
+  const image = await loadImageForAnalysis(file);
+  const size = 144;
+  const canvas = document.createElement("canvas");
+  canvas.width = size;
+  canvas.height = size;
+  const context = canvas.getContext("2d", { willReadFrequently: true });
+  context.drawImage(image, 0, 0, size, size);
+  const { data } = context.getImageData(0, 0, size, size);
+
+  let total = 0;
+  let brightnessSum = 0;
+  let rednessSum = 0;
+  let saturationSum = 0;
+  let brightPixels = 0;
+  let darkSpotPixels = 0;
+  let redPixels = 0;
+  const brightnessValues = [];
+
+  for (let index = 0; index < data.length; index += 4) {
+    const alpha = data[index + 3];
+    if (alpha < 20) continue;
+    const red = data[index];
+    const green = data[index + 1];
+    const blue = data[index + 2];
+    const max = Math.max(red, green, blue);
+    const min = Math.min(red, green, blue);
+    const brightness = 0.299 * red + 0.587 * green + 0.114 * blue;
+    const redness = Math.max(0, red - (green + blue) / 2);
+    const saturation = max === 0 ? 0 : (max - min) / max;
+
+    total += 1;
+    brightnessSum += brightness;
+    rednessSum += redness;
+    saturationSum += saturation;
+    brightnessValues.push(brightness);
+
+    if (brightness > 212 && saturation < 0.22) brightPixels += 1;
+    if (brightness < 118 && redness > 8 && saturation > 0.16) darkSpotPixels += 1;
+    if (redness > 24 && saturation > 0.18) redPixels += 1;
+  }
+
+  const avgBrightness = total ? brightnessSum / total : 0;
+  const variance = brightnessValues.reduce((sum, value) => sum + (value - avgBrightness) ** 2, 0) / Math.max(total, 1);
+  const contrast = Math.sqrt(variance);
+  const redness = total ? (rednessSum / total / 76) * 100 : 0;
+  const saturation = total ? (saturationSum / total) * 100 : 0;
+  const spotDensity = total ? (darkSpotPixels / total) * 220 : 0;
+  const redDensity = total ? (redPixels / total) * 180 : 0;
+  const oiliness = total ? (brightPixels / total) * 260 : 0;
+  const texture = Math.min(100, contrast * 1.45 + saturation * 0.28);
+  const hydrationSignal = Math.max(0, Math.min(100, 72 - texture * 0.32 - redness * 0.18 + oiliness * 0.08));
+
+  return {
+    brightness: Math.round(Math.max(0, Math.min(100, (avgBrightness / 255) * 100))),
+    redness: Math.round(Math.max(redness, redDensity)),
+    spot_density: Math.round(Math.max(0, Math.min(100, spotDensity))),
+    texture: Math.round(Math.max(0, Math.min(100, texture))),
+    oiliness: Math.round(Math.max(0, Math.min(100, oiliness))),
+    hydration_signal: Math.round(Math.max(0, Math.min(100, hydrationSignal))),
+    contrast: Math.round(Math.max(0, Math.min(100, contrast))),
+    file_signature: `${file.name}:${file.size}:${image.naturalWidth}x${image.naturalHeight}`,
+  };
+}
+
 const conversionFields = {
   legal: {
     lawyer: {
@@ -334,6 +415,7 @@ function ServicePage({ page, standalone = false }) {
   const [beautyAnalysisError, setBeautyAnalysisError] = useState("");
   const [beautyPhoto, setBeautyPhoto] = useState(null);
   const [beautyPhotoPreview, setBeautyPhotoPreview] = useState("");
+  const [beautyImageProfile, setBeautyImageProfile] = useState(null);
   const [beautyPhotoBusy, setBeautyPhotoBusy] = useState(false);
   const [beautyPhotoError, setBeautyPhotoError] = useState("");
   const [spinning, setSpinning] = useState(false);
@@ -489,6 +571,7 @@ function ServicePage({ page, standalone = false }) {
             size: beautyPhoto.filesize,
           }
         : null,
+      image_profile: beautyImageProfile,
       selected_metric: activeMetric,
       report_highlights: (page.reportHighlights ?? []).slice(0, 4),
     };
@@ -521,6 +604,7 @@ function ServicePage({ page, standalone = false }) {
               face_photo_uploaded: scan.face_photo_uploaded,
               photo_file: scan.photo,
               photo_summary: analysis.photo_summary,
+              image_profile: scan.image_profile,
             },
             session,
             context: {
@@ -739,6 +823,7 @@ function ServicePage({ page, standalone = false }) {
 
     setBeautyPhotoError("");
     setBeautyPhoto(null);
+    setBeautyImageProfile(null);
     setBeautyAnalysis(null);
     setBeautyAnalysisError("");
 
@@ -755,6 +840,11 @@ function ServicePage({ page, standalone = false }) {
     }
 
     setBeautyPhotoPreview(URL.createObjectURL(file));
+    const imageProfile = await analyzeBeautyImageFile(file).catch((error) => {
+      setBeautyPhotoError(error.message);
+      return null;
+    });
+    setBeautyImageProfile(imageProfile);
 
     if (!session?.access_token) {
       setBeautyPhotoError("请先登录或注册，再上传照片并保存真实面诊记录。");
@@ -1332,9 +1422,25 @@ function BeautyNetworkAnalysisPanel({ analysis, busy, error, onOpenReport }) {
   );
 }
 
+function getBeautyReportMetrics(metrics, analysis) {
+  const profile = analysis?.image_profile;
+  if (!profile) return metrics;
+  const values = [
+    profile.texture,
+    Math.round((Number(profile.hydration_signal || 0) + Number(profile.brightness || 0)) / 2),
+    Math.max(Number(profile.redness || 0), Number(profile.spot_density || 0)),
+    Math.round((Number(profile.oiliness || 0) + Number(profile.texture || 0)) / 2),
+  ];
+  return metrics.map((item, index) => ({
+    ...item,
+    value: Math.max(35, Math.min(96, Number(values[index] ?? item.value) || item.value)),
+  }));
+}
+
 function BeautyReportPage({ activeMetric, analysis, beautyPhoto, handleMetric, onOpenCard, page, runAction }) {
   const recommendations = analysis?.recommendations ?? [];
   const riskNotes = analysis?.risk_notes ?? [];
+  const reportMetrics = getBeautyReportMetrics(page.metrics, analysis);
 
   return (
     <section className="app-screen beauty-screen tab-page beauty-tab-page">
@@ -1391,7 +1497,7 @@ function BeautyReportPage({ activeMetric, analysis, beautyPhoto, handleMetric, o
       <section className="panel-card">
         <h2>核心指标</h2>
         <div className="metric-grid">
-          {page.metrics.map((item) => (
+          {reportMetrics.map((item) => (
             <button
               aria-pressed={activeMetric === item.label}
               className={`metric metric-${item.tone}${activeMetric === item.label ? " is-active" : ""}`}

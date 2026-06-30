@@ -459,21 +459,61 @@ function localUploadFile({ file, metadata, session }) {
 }
 
 function buildLocalBeautyAnalysis(scan = {}) {
+  const profile = scan.image_profile ?? {};
+  const metricLabels = scan.metric_labels ?? {};
+  const valueOf = (key, fallback = 0) => Number(profile[key] ?? fallback) || 0;
+  const redness = valueOf("redness");
+  const spotDensity = valueOf("spot_density");
+  const texture = valueOf("texture");
+  const oiliness = valueOf("oiliness");
+  const hydration = valueOf("hydration_signal", scan.metrics?.hydration);
+  const brightness = valueOf("brightness");
+
+  const issues = [
+    { key: "redness", label: "泛红敏感", value: redness, advice: "先减少刷酸、清洁面膜和高浓度功效叠加，优先做屏障修护。" },
+    { key: "spot_density", label: "痘印斑点", value: spotDensity, advice: "痘印和色沉区域建议以防晒、抗氧化和温和淡印为主，避免反复刺激。" },
+    { key: "texture", label: metricLabels.texture || "肤质纹理", value: texture, advice: "纹理起伏较明显时，先稳定清洁和保湿，再循序渐进改善角质代谢。" },
+    { key: "oiliness", label: "油光毛孔", value: oiliness, advice: "油光和毛孔问题适合做控油、补水和规律清洁，不建议一次叠加过多功效产品。" },
+    { key: "hydration", label: metricLabels.hydration || "含水稳定度", value: 100 - hydration, advice: "补水和锁水需要同时做，洁面后尽快叠加保湿修护类产品。" },
+  ].sort((left, right) => right.value - left.value);
+
+  const mainIssues = issues.filter((item) => item.value >= 38).slice(0, 3);
+  const primary = mainIssues[0] ?? issues[0];
+  const secondary = mainIssues[1] ?? issues[1];
+  const brightnessNote =
+    brightness > 68
+      ? "整体亮度较高，但仍需注意防晒和屏障稳定。"
+      : brightness < 42
+        ? "面部整体亮度偏低，建议同步关注暗沉、色沉和作息影响。"
+        : "整体亮度处于中等区间，重点看局部问题分布。";
+  const summary = scan.face_photo_uploaded || profile.file_signature
+    ? `本次照片研判显示，优先关注${primary.label}${secondary ? `和${secondary.label}` : ""}。${brightnessNote}建议先做基础修护，再按主要问题分层加入针对性护理。`
+    : "当前为基础面诊结果；上传清晰正脸照片后，可根据泛红、痘印、毛孔、油光和纹理生成更具体的报告。";
+  const photoSummary = scan.photo?.filename
+    ? `已结合 ${scan.photo.filename} 的像素特征生成研判，图片签名 ${profile.file_signature || "已记录"}。`
+    : profile.file_signature
+      ? "已读取本次照片特征，未登录保存时仍可生成临时面诊结论。"
+      : "当前为基础面诊结果；上传正脸照片后可形成更完整的记录。";
+  const recommendations = [
+    ...mainIssues.map((item) => item.advice),
+    hydration < 48 ? "当前保湿稳定度偏弱，建议把温和洁面、保湿乳霜和防晒作为第一阶段。" : "保湿状态相对平稳，可在稳定基础上逐步加入针对性护理。",
+    redness > 52 || spotDensity > 48 ? "如持续炎症、敏感或反复爆痘，建议面诊专业顾问确认处理节奏。" : "维持规律作息和防晒，观察 2-4 周后再升级护理方案。",
+  ].filter(Boolean);
+  const riskNotes = [
+    redness > 52 ? "泛红明显时避免热敷、磨砂、刷酸和强刺激项目。" : "避免过度清洁和频繁更换产品。",
+    spotDensity > 45 ? "痘印和色沉改善周期较长，需配合稳定防晒。" : "敏感期先做局部测试。",
+    oiliness > 50 ? "控油不等于强清洁，过度清洁可能加重屏障不稳。" : "医美项目需结合实际皮肤状态评估。",
+  ];
+
   return {
     id: makeId("beauty_analysis"),
     provider_status: "local",
     generated_at: new Date().toISOString(),
-    summary: "本次面部指标显示需要优先关注补水、屏障稳定和痘印管理。建议先以温和清洁、基础保湿、防晒和低刺激修护为主，再逐步加入功效型护理。",
-    photo_summary: scan.photo?.filename
-      ? `已读取 ${scan.photo.filename} 的面诊记录，并同步保存到报告中。`
-      : "当前为基础面诊结果；上传正脸照片后可形成更完整的记录。",
-    recommendations: [
-      "优先建立温和清洁、保湿和防晒的基础护理。",
-      "痘痘或泛红明显时，先避免刷酸和强刺激项目。",
-      "毛孔和油脂问题适合循序渐进管理，不建议一次叠加过多功效产品。",
-      "如有持续炎症、敏感或反复爆痘，建议面诊专业顾问。",
-    ],
-    risk_notes: ["避免过度清洁和频繁更换产品。", "敏感期先做局部测试。", "医美项目需结合实际皮肤状态评估。"],
+    summary,
+    photo_summary: photoSummary,
+    recommendations: recommendations.slice(0, 4),
+    risk_notes: riskNotes,
+    image_profile: profile,
     sources: [],
     disclaimer: "本结果为皮肤护理参考，不替代医生或专业机构面诊。",
   };
